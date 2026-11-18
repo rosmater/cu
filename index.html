@@ -1,4 +1,32 @@
-<!doctype html><meta charset="utf-8"><title>ClickUp</title>
-<script>var t=new URLSearchParams(location.search).get('t')||'';if(/^[A-Za-z0-9]+$/.test(t)){location.href='clickup://t/'+t;}</script>
-<p>Открываю ClickUp… <a id=a>веб-версия</a></p>
-<script>document.getElementById('a').href='https://app.clickup.com/t/'+(new URLSearchParams(location.search).get('t')||'');</script>
+<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClickUp</title>
+<style>body{font:15px system-ui,sans-serif;color:#334155;margin:24px}a{color:#4f46e5}#m{margin-top:6px;color:#64748b}</style>
+<p id=s>Открываю ClickUp… <a id=a>веб-версия</a></p><p id=m></p>
+<script>
+/* t7401u: открыли приложение (clickup://) → эта служебная вкладка закрывается сама. Веб-версия по ссылке открывается в этой же вкладке и вкладка НЕ закрывается.
+   Закрываем, когда приложение забрало фокус (blur/скрыта) или через ~1.4 с; если фокус так и не ушёл (приложения нет / ждёт подтверждения браузера) — остаёмся и показываем подсказку. */
+var t = new URLSearchParams(location.search).get('t') || '';
+var web = 'https://app.clickup.com/t/' + t;
+document.getElementById('a').href = web;
+if (/^[A-Za-z0-9]+$/.test(t)) {
+  var gone = false, done = false;
+  var mark = function () { gone = true; };
+  addEventListener('blur', mark); addEventListener('pagehide', mark);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) mark(); });
+  var away = function () { return gone || document.hidden || !document.hasFocus(); };
+  var closeNow = function () {
+    if (done) return; done = true;
+    try { window.close(); } catch (e) {}
+    setTimeout(function () { // браузер не дал закрыть (вкладка открыта не ссылкой/скриптом) — подсказка
+      document.getElementById('s').innerHTML = 'ClickUp открыт в приложении. <b>Эту вкладку можно закрыть.</b> <a href="' + web + '">Открыть в вебе</a>';
+    }, 400);
+  };
+  location.href = 'clickup://t/' + t;
+  setTimeout(function () {
+    if (away()) return closeNow();
+    var n = 0, iv = setInterval(function () { // фокус ещё у вкладки: подождать, не диалог ли «открыть приложение?»
+      if (away()) { clearInterval(iv); closeNow(); }
+      else if (++n >= 20) { clearInterval(iv); document.getElementById('m').innerHTML = 'Приложение не открылось? <a href="' + web + '">Открыть задачу в веб-версии</a>'; }
+    }, 200);
+  }, 1400);
+}
+</script>
